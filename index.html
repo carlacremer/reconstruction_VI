@@ -31,12 +31,8 @@ async function fetchData() {
 
   try {
     const [playRes, actRes] = await Promise.all([
-
-      fetch('./assets/memory_play_2/data_to_replay.json'), // Adjusted paths for github pages
-      fetch('./assets/memory_act_2/data_to_replay.json')
-
-      // fetch('assets/memory_play_2/data_to_replay.json'),
-      // fetch('assets/memory_act_2/data_to_replay.json')
+      fetch('assets/memory_play_2/data_to_replay.json'),
+      fetch('assets/memory_act_2/data_to_replay.json')
     ]);
 
     if (!playRes.ok || !actRes.ok) {
