@@ -1,7 +1,32 @@
 <!DOCTYPE html>
 <html>
-
 <head>
+  <title>Insight</title>
+
+  <!-- local libs -->
+  <script src="./jatos.js"></script>
+  <script src="./jquery/jquery.min.js"></script>
+  <script src="./jspsych-6.1.0/jspsych.js"></script>
+
+  <!-- jsPsych plugins -->
+  <script src="./jspsych-6.1.0/plugins/jspsych-preRNG.js"></script>
+  <script src="./jspsych-6.1.0/plugins/jspsych-fullscreen.js"></script>
+  <script src="./jspsych-6.1.0/plugins/jspsych-findSquares.js"></script>
+  <script src="./jspsych-6.1.0/plugins/jspsych-findSquares-replay.js"></script>
+  <script src="./jspsych-6.1.0/plugins/jspsych-findSquares-replay-2players.js"></script>
+  <script src="./jspsych-6.1.0/plugins/jspsych-instructions.js"></script>
+  <script src="./jspsych-6.1.0/plugins/jspsych-call-function.js"></script>
+  <script src="./jspsych-6.1.0/plugins/jspsych-survey-multi-choice.js"></script>
+  <script src="./jspsych-6.1.0/plugins/jspsych-survey-text.js"></script>
+  <script src="./jspsych-6.1.0/plugins/jspsych-external-html.js"></script>
+  <script src="./p5/p5.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Corben&family=Quicksand&display=swap" rel="stylesheet">
+  <link href="./style.css" rel="stylesheet" type="text/css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
+  <script src="./mersenne-twister.js"></script>
+</head>
+
+<!-- <head> // this was used for showing on jatos 
   <title>Insight</title>
   <script src="jatos.js"></script>
   <script src="jquery/jquery.min.js"></script>
@@ -22,36 +47,22 @@
   </link>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
   <script src="mersenne-twister.js"></script>
-</head>
+</head> -->
 
 <body></body>
 <script>
 
-
-// async function fetchData() {
-
-//     try {      
-//                 const response_play = await fetch(`assets/memory_play_2/data_to_replay.json`); 
-          
-//                 window.data_play = await response_play.json();
-                
-//                 const response_act = await fetch(`assets/memory_act_2/data_to_replay.json`); 
-
-//                 window.data_act = await response_act.json();
-
-//                 window.data= window.data_play;
-//                 console.log('Fetch completed');
-//             } catch (error) {
-//                 console.error('There was a problem with the fetch operation:', error);
-//             }
-//         }
 async function fetchData() {
   console.log('fetchData called'); // Debugging log
 
   try {
     const [playRes, actRes] = await Promise.all([
-      fetch('assets/memory_play_2/data_to_replay.json'),
-      fetch('assets/memory_act_2/data_to_replay.json')
+
+      fetch('./assets/memory_play_2/data_to_replay.json'), // Adjusted paths for github pages
+      fetch('./assets/memory_act_2/data_to_replay.json')
+
+      // fetch('assets/memory_play_2/data_to_replay.json'),
+      // fetch('assets/memory_act_2/data_to_replay.json')
     ]);
 
     if (!playRes.ok || !actRes.ok) {
