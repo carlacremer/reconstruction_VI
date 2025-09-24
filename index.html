@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Insight</title>
+  <!-- <script src="jatos.js"></script> -->
+  <script src="jquery/jquery.min.js"></script>
+  <script src="jspsych-6.1.0/jspsych.js"></script>
+  <script src="jspsych-6.1.0/plugins/jspsych-preRNG.js"></script>
+  <script src="jspsych-6.1.0/plugins/jspsych-fullscreen.js"></script>
+  <script src="jspsych-6.1.0/plugins/jspsych-findSquares.js"></script>
+  <script src="jspsych-6.1.0/plugins/jspsych-findSquares-replay.js"></script>
+  <script src="jspsych-6.1.0/plugins/jspsych-findSquares-replay-2players.js"></script>
+  <script src="jspsych-6.1.0/plugins/jspsych-instructions.js"></script>
+  <script src="jspsych-6.1.0/plugins/jspsych-call-function.js"></script>
+  <script src="jspsych-6.1.0/plugins/jspsych-survey-multi-choice.js"></script>
+  <script src="jspsych-6.1.0/plugins/jspsych-survey-text.js"></script>
+  <script src="jspsych-6.1.0/plugins/jspsych-external-html.js"></script>
+  <script src="p5/p5.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Corben&family=Quicksand&display=swap" rel="stylesheet">
+  <link href="style.css" rel="stylesheet" type="text/css">
+  </link>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
+  <script src="mersenne-twister.js"></script>
+</head>
+
+<body></body>
+<script>
+
+async function fetchData() {
+  console.log('fetchData called'); // Debugging log
+
+  try {
+    const [playRes, actRes] = await Promise.all([
+      fetch('assets/memory_play_2/data_to_replay.json'),
+      fetch('assets/memory_act_2/data_to_replay.json')
+    ]);
+
+    if (!playRes.ok || !actRes.ok) {
+      throw new Error(`Fetch failed: playRes.ok=${playRes.ok}, actRes.ok=${actRes.ok}`);
+    }
+
+    const [playData, actData] = await Promise.all([
+      playRes.json(),
+      actRes.json()
+    ]);
+
+    window.data_play = playData;
+    window.data_act = actData;
+    window.data = window.data_play;
+
+    console.log('Data loaded:', window.data); // Verify it's defined
+  } catch (err) {
+    console.error('Fetch error in fetchData():', err);
+    window.data = []; // fallback to avoid undefined
+  }
+}
+  async function makeTimeline() {
+
+    const timeline = [];
+    // window.pretend = true; //Math.random()>0.5; // condition : pretending
+    
+    await fetchData(); // Fetch the data before proceeding
+    
+    window.whitesClicked = 0;
+    window.ntrials = 5; // number of boards shown
+    window.InitialGamePoints = 200;
+    window.gamePoints = window.InitialGamePoints; // start with max points 
+    window.pointsColor =  "#FFE6A6";
+
+    window.round_num = 0; 
+    window.maxBoardPoints = 30; // retain to have a count of points per board
+    window.boardPoints = window.maxBoardPoints; 
+    window.lossWhites = 1;  // loss per white square is 1 point at start 
+
+    var grid_order = shuffle([...Array(window.ntrials).keys()]); 
+    window.genuine_grids = grid_order.slice(0, window.ntrials).map(String); // ['0', '1', '2', '3'];
+    window.pretend_grids = grid_order.slice(0, window.ntrials).map(String);
+    
+    var gridCoors = new Array(window.ntrials);
+    var alreadyClicked = new Array(window.ntrials);
+    
+    gridCoors[0] = [
+                    ['1', '0', '0', '0', '0', '1'],
+                    ['1', '0', '0', '0', '0', '1'],
+                    ['0', '0', '0', '0', '0', '0'],
+                    ['1', '1', '0', '0', '1', '1'],
+                    ['1', '0', '0', '0', '0', '1'],
+                    ['0', '0', '0', '0', '0', '0']
+                  ]
+    alreadyClicked[0] = [
+                      [1, 0],
+                      [0, 5],
+                      [3, 1],
+                      [4, 5],
+                    ];
+    gridCoors[1] =[
+                    ['0', '0', '0', '0', '0', '0'],
+                    ['1', '1', '0', '0', '1', '1'],
+                    ['0', '0', '0', '0', '0', '0'],
+                    ['1', '0', '0', '0', '0', '1'],
+                    ['1', '1', '0', '0', '1', '1'],
+                    ['0', '0', '0', '0', '0', '0']
+                ]
+    alreadyClicked[1]= [                 
+                        [1, 1],
+                        [1, 5],
+                        [3, 5],
+                        [4, 0]
+                      ]    
+    gridCoors[2] =[
+                    ['0', '0', '0', '0', '0', '0'],
+                    ['0', '0', '0', '0', '0', '0'],
+                    ['0', '0', '1', '1', '0', '0'],
+                    ['0', '0', '1', '1', '0', '0'],
+                    ['1', '1', '0', '0', '1', '1'],
+                    ['1', '0', '0', '0', '0', '1']
+                  ]
+    alreadyClicked[2]=[
+                      [2, 2],
+                      [4, 1],
+                      [4, 5]
+                    ]
+    gridCoors[3] = [
+                    ['0', '0', '0', '0', '0', '0'],
+                    ['0', '0', '1', '1', '0', '0'],
+                    ['0', '0', '1', '1', '0', '0'],
+                    ['0', '1', '0', '0', '1', '0'],
+                    ['0', '1', '0', '0', '1', '0'],
+                    ['0', '1', '0', '0', '1', '0']
+                  ]
+    alreadyClicked[3]=[
+                      [1, 2],
+                      [4, 4],
+                      [5, 1]
+                      ]
+    gridCoors[4] = [
+                    ['1', '1', '0', '0', '1', '1'],
+                    ['0', '0', '0', '0', '0', '0'],
+                    ['0', '0', '0', '0', '0', '0'],
+                    ['1', '0', '0', '0', '0', '1'],
+                    ['1', '1', '0', '0', '1', '1'],
+                    ['0', '0', '0', '0', '0', '0']
+                    ]
+    alreadyClicked[4] = [
+                      [0, 1],
+                      [0, 5],
+                      [4, 1],
+                      [4, 4]
+                    ]                   
+    gridCoors[5] = [
+                    ['0', '1', '1', '1', '1', '0'],
+                    ['0', '0', '0', '0', '0', '0'],
+                    ['1', '1', '0', '0', '1', '1'],
+                    ['1', '0', '0', '0', '0', '1'],
+                    ['0', '0', '0', '0', '0', '0'],
+                    ['0', '0', '0', '0', '0', '0']
+                  ]
+    alreadyClicked[5] = [
+                        [0,1],
+                        [2,0],
+                        [3,5]
+                        ]
+
+    var grids = {
+      '0': {
+        'grid': gridCoors[0],
+        'already_clicked': alreadyClicked[0]
+      },
+      '1': {
+        'grid': gridCoors[1],
+        'already_clicked': alreadyClicked[1]
+      },
+
+      '2': {
+        'grid': gridCoors[2],
+        'already_clicked': alreadyClicked[2]
+      },
+      '3': {
+        'grid': gridCoors[3],
+        'already_clicked': alreadyClicked[3]
+      },
+      '4': {
+        'grid': gridCoors[4],
+        'already_clicked': alreadyClicked[4]
+      },
+      '5': {
+        'grid': gridCoors[5],
+        'already_clicked': alreadyClicked[5]
+      }
+    }
+
+    var game = { // used for both genuine and pretend games
+      type: "findSquares",
+      cheat: jsPsych.timelineVariable('cheat'),
+      grid: jsPsych.timelineVariable('grid'),
+      already_clicked: jsPsych.timelineVariable('already_clicked'),
+      data: jsPsych.timelineVariable('data'),
+      on_finish: jsPsych.timelineVariable('on_finish')
+    };
+
+    gg_vars = window.genuine_grids.map(function (i) {
+
+      /**
+       * -  Prepare each board play. For each element `i` in `window.genuine_grids`, creates an object `vars` with the following properties:
+       * - `cheat`: a boolean value indicating whether this is a pretence round or not
+       * - `grid`: the grid boolean matrix retrieved from the `grids` dict selecting a string number from window.genuine_grids 
+       * - `data`: an object containing additional data, including the `grid_number` and `test_part`
+       * - `already_clicked`: the `already_clicked` key that match the selected grid 
+       * - `on_finish`: a function that is called when the task is finished. It takes a `data` parameter and performs
+       *   two asynchronous operations using the `jatos.batchSession` object:
+       *   1. Adds the `click_log` data to the `/genuine_log/${data.grid_number}/${window.participant_number}` endpoint
+       *   2. Adds the `window.gamePoints` value to the `/bonuses/${window.participant_number}/np` endpoint
+       *   If any of the operations fail, an error message is logged to the console.
+       *
+       * @returns {Array} 
+       */
+
+      i = window.genuine_grids[i]; // select string
+
+      vars = {
+        cheat: false,
+        grid: grids[i].grid,
+        data: {
+          grid_number: i,
+          test_part: 'non-pretend'
+        },
+        already_clicked: grids[i].already_clicked,
+        // on_finish: (data) => {
+        //   jatos.batchSession.add(`/genuine_log/${data.grid_number}/${window.participant_number}`, data.click_log)
+        //     .then(() => jatos.batchSession.add(`/bonuses/${window.participant_number}/np`, window.gamePoints))
+        //     .catch(() => console.log("Batch Session synchronization failed"));
+        // }
+      };
+      return vars
+    });
+
+    var genuine_games = {
+      timeline: [game],
+      timeline_variables: gg_vars,
+      repetitions: 1,
+      randomize_order: true,
+    }
+    
+    // cg_vars = window.pretend_grids.map(function (i) {
+
+    //   i = window.genuine_grids[i]; // select string
+
+    //   vars = {
+    //     cheat: true,
+    //     grid: grids[i].grid,
+    //     data: {
+    //       grid_number: i,
+    //       test_part: 'pretend'
+    //     },
+    //     already_clicked: grids[i].already_clicked,
+
+    //     on_finish: (data) => {
+    //       jatos.batchSession.add(`/cheat_log/${data.grid_number}/${window.participant_number}`, data.click_log)
+    //         .catch(() => console.log("Batch Session synchronization failed"));
+    //     }
+    //   };
+    //   return vars
+    // });
+
+    cg_vars = window.pretend_grids.map(function (i) {
+
+    i = window.genuine_grids[i]; // select string
+
+    let vars = {
+      cheat: true,
+      grid: grids[i].grid,
+      data: {
+        grid_number: i,
+        test_part: 'pretend'
+      },
+      already_clicked: grids[i].already_clicked,
+
+      // on_finish: (data) => {
+      //   // Demo: log to console instead of JATOS
+      //   console.log("Cheat log:", {
+      //     grid_number: data.grid_number,
+      //     participant: window.participant_number || "demo",
+      //     clicks: data.click_log
+      //   });
+      //   // Optionally store locally:
+      //   if (!window.cheat_log) window.cheat_log = {};
+      //   window.cheat_log[data.grid_number] = data.click_log;
+      // }
+    };
+    return vars;
+  });
+
+    var cheat_games = {
+      timeline: [game],
+      timeline_variables: cg_vars,
+      repetitions: 1,
+      randomize_order: false
+    }
+
+    // replay interface
+    
+  function findDataByProlificPIDs(data, prolificPIDs) {
+    const keys = Object.keys(data);
+    for (let i = 0; i < keys.length; i++) {
+        const i_subj = keys[i];
+        if (prolificPIDs.includes(data[i_subj][1].PROLIFIC_PID)) {
+            return i_subj;
+        }
+      }
+    }
+
+    var choose_what_to_see = {
+      type: 'survey-multi-choice',
+      show_clickable_nav: true,
+      questions: [
+        {
+          prompt: `Player`,
+          name: 'player', 
+          options: [
+            1,2,3,4,5,6,7,8,9 // select subset
+ 
+           ], required: true},
+            {
+              prompt: `Part`,
+              name: 'part', 
+              options: [ 
+                'Play','Act'], required: true},
+            {
+              prompt: `Round`,
+              name: 'round',
+              options: [ 
+                1,2,3,4,5], required: true}
+      ],
+
+      on_finish: (data) => {
+      const responses = JSON.parse(data.responses);
+      window.responses = data.responses;
+      window.i_subjnumber = Number(responses.player); // always from 'player'
+      window.part = responses.part;                   // always from 'part'
+      window.i_game = Number(responses.round);        // always from 'round'
+    }
+    }
+
+    var setReplayData = {
+      type: 'call-function',
+      func: function() {
+        if (window.part === 'Act') {
+          window.data = window.data_act;  
+          console.log('window.data_act', window.data);        
+        }
+        if (window.i_subjnumber==1){
+          window.prolif_ID = '664e1623b1e0dfea5807e648' 
+        }
+        if (window.i_subjnumber==2){
+          window.prolif_ID = '65313bdcb9fd825a8c1d4981'
+        }
+        if (window.i_subjnumber==3){
+          window.prolif_ID = '6315fd72852e279a1a13e5f1'
+        }
+        if (window.i_subjnumber==4){
+          window.prolif_ID = '653703627539f3a8b2ed4af3'
+        }
+        if (window.i_subjnumber==5){
+          window.prolif_ID = '5dd05d80b2204f1487f7812c'
+        }
+        if (window.i_subjnumber==6){
+          window.prolif_ID = '66439c3bab98bb0158f84946'
+        }
+        if (window.i_subjnumber==7){
+          window.prolif_ID = '6141f62294ff9bf9d89e8897'
+        }
+        if (window.i_subjnumber==8){
+          window.prolif_ID = '6718da927f1110131780367d'
+        }
+        if (window.i_subjnumber==9){
+          window.prolif_ID = '5f03689af7a20a55f0edc079'
+        }
+        window.i_subj = findDataByProlificPIDs(window.data,[window.prolif_ID]); // prolif_ID is a string
+
+      }
+    };
+
+    var replay_game = {
+
+      type: 'findSquares_replay',
+   
+      grid: ()=>{return window.data[window.i_subj][window.i_game].grid},
+      already_clicked: ()=>{return window.data[window.i_subj][window.i_game].already_clicked},
+      click_log: ()=>{return window.data[window.i_subj][window.i_game].click_log},
+      hover_log: ()=>{return window.data[window.i_subj][window.i_game].hover_log},
+      // given_subject_id: ()=>{return window.data[window.i_subj][window.i_game].given_subject_id},
+      PROLIFIC_PID: ()=>{return window.data[window.i_subj][window.i_game].PROLIFIC_PID},
+      board_number: ()=>{return window.i_game+''},
+      cheat: () => window.data[window.i_subj][window.i_game].cheat === 1
+    }
+
+    timeline.push({
+      type: 'fullscreen',
+      fullscreen_mode: true
+    });
+    timeline.push( //debug comment
+      {
+        timeline: [choose_what_to_see, setReplayData, replay_game],
+        loop_function: function (data) {
+          return true
+        }
+      }
+    )
+    return timeline
+  };
+
+  function hexToBytes(hex) {
+    for (var bytes = [], c = 0; c < hex.length; c += 2)
+      bytes.push(parseInt(hex.substr(c, 2), 16));
+    return bytes;
+  }
+
+  function shuffle(array) {
+    var currentIndex = array.length, temporaryValue, randomIndex;
+
+    // While there remain elements to shuffle...
+    while (0 !== currentIndex) {
+
+      // Pick a remaining element...
+      randomIndex = Math.floor(Math.random() * currentIndex);
+      currentIndex -= 1;
+
+      // And swap it with the current element.
+      temporaryValue = array[currentIndex];
+      array[currentIndex] = array[randomIndex];
+      array[randomIndex] = temporaryValue;
+    }
+
+    return array;
+  }
+
+  function generateZeroArray(dim) {
+    let arr = new Array(dim);
+    for (let i = 0; i < dim; i++) {
+      arr[i] = new Array(dim).fill('0');
+    }
+    return arr;
+  }
+
+  $(window).resize(function () {
+    this.innerWidth = window.innerWidth;
+    this.innerHeight = window.innerHeight;
+    this.width = window.width;
+    this.height = window.height;
+  })
+
+  (async function () {
+  var m = new MersenneTwister();
+  Math.random = function () { return m.random() };
+
+  // Fallback demo IDs
+  var protocol_sum = "demo_protocol";
+  var subject_identifier = "demo_participant";
+
+  let subject_sum = hexToBytes(
+    CryptoJS.SHA256(protocol_sum + subject_identifier).toString()
+  );
+  m.init_by_array(subject_sum, subject_sum.length);
+
+  jsPsych.data.addProperties({
+    'protocol_sum': protocol_sum,
+    'subject_identifier': subject_identifier,
+    'subject_sum': subject_sum
+  });
+
+  timeline = await makeTimeline();
+
+  jsPsych.init({
+    timeline: timeline,
+    on_finish: function () {
+      jsPsych.data.addProperties({
+        pretend: window.pretend,
+        gamePoints: window.gamePoints,
+      });
+      // var resultJson = jsPsych.data.get().json();
+      // console.log("Results:", resultJson); // instead of jatos.submitResultData
+    }
+  });
+})();
+
+  // jatos.onLoad(async function () {
+  //   window.participant_number = jatos.batchSession.get(`participant_number`);
+
+  //   var m = new MersenneTwister();
+  //   Math.random = function () { return m.random() };
+  //   var protocol_sum = jatos.batchSession.get("protocol_sum");
+  //   var subject_identifier = window.participant_number;
+  //   subject_sum = hexToBytes(
+  //     CryptoJS.SHA256(
+  //       protocol_sum + subject_identifier).toString()
+  //   );
+  //   m.init_by_array(subject_sum, subject_sum.length);
+  //   jsPsych.data.addProperties({
+  //     'protocol_sum': protocol_sum,
+  //     'subject_identifier': subject_identifier, 'subject_sum': subject_sum
+  //   });
+  //   // !!
+
+  //   jatos.batchSession.add(`/participant_number`, window.participant_number + 1)
+  //     .then(() => {
+  //       window.nickname = 'Player ' + window.participant_number;
+  //       jatos.batchSession.add(`/bonuses/${window.participant_number}`,
+  //         {
+  //           nickname: window.nickname,
+  //           p: [...Array(window.ntrials * 2)].map(x => 0)
+  //         })
+  //         .catch(() => console.log("Batch Session synchronization failed"));
+  //     })
+  //     .catch(() => console.log("Batch Session synchronization failed"));
+  //   window.genuine_log = jatos.batchSession.get(`genuine_log`);
+  //   window.cheat_log = jatos.batchSession.get(`cheat_log`);
+  //   window.bonuses = jatos.batchSession.get('bonuses');
+
+  //   participants = Object.keys(window.bonuses);
+  //   window.np_leader = { name: 'default', points: 0 }
+
+  //   for (i = 0; i < participants.length; i++) {
+  //     if (window.bonuses[participants[i]].np > window.np_leader.points) {
+  //       window.np_leader.name = window.bonuses[participants[i]].nickname;
+  //       window.np_leader.points = window.bonuses[participants[i]].np;
+  //     }
+  //   }
+  //   timeline = await makeTimeline()
+
+  //   jsPsych.init({
+  //     timeline: timeline,
+  //     on_finish: function () {
+  //       jsPsych.data.addProperties(jatos.urlQueryParameters);
+  //       jsPsych.data.addProperties({
+  //         pretend: window.pretend,
+  //         gamePoints: window.gamePoints,
+  //       });
+  //       var resultJson = jsPsych.data.get().json();
+  //       jatos.submitResultData(resultJson, jatos.startNextComponent);
+  //     }
+  //   })
+  // })
+
+</script>
+
+</html>
+<!-- {
+     "protocol_sum": "changeToTheHashOfTheProtocolFolder",
+    "participant_number":0,
+     "genuine_log":{"0":{},"1":{},"2":{},"3":{},"4":{},"5":{},"6":{},"7":{},"8":{},"9":{}},
+     "cheat_log": {"0":{},"1":{},"2":{},"3":{},"4":{},"5":{},"6":{},"7":{},"8":{},"9":{}},
+     "bonuses":{}
+ } -->
