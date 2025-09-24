@@ -54,6 +54,7 @@ async function fetchData() {
     window.data = []; // fallback to avoid undefined
   }
 }
+
   async function makeTimeline() {
 
     const timeline = [];
@@ -447,9 +448,9 @@ async function fetchData() {
     this.innerHeight = window.innerHeight;
     this.width = window.width;
     this.height = window.height;
-  })
+  });
 
-  (async function () {
+; (async function () {
   var m = new MersenneTwister();
   Math.random = function () { return m.random() };
 
